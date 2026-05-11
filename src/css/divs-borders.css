@@ -1,0 +1,13 @@
+/*#redRect.borderRed{
+    border: 2px solid darkred;
+    box-shadow: 0 0 5px 1px rgba(255, 80, 80, 0.5)
+}
+#blueRect.borderBlue{
+    border: 2px solid blue;
+    box-shadow: 0 0 5px 1px rgba(65, 105, 225, 1)
+}*/
+
+.dynamic-color-border{
+    border: 3px solid var(--border-color);
+    box-shadow: 0 0 5px 3px var(--glow-color)
+}
