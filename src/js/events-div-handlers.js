@@ -17,7 +17,7 @@ function choiceElement(e){
 }
 
 
-function initBlueRect(){
+function initRect(){
     activeElement.style.marginLeft = position[activeElement.id][0] + "px";
     activeElement.style.marginTop = position[activeElement.id][1] + "px";
 }
@@ -65,7 +65,7 @@ function shiftRect(e){
             }
             break;
     }
-    initBlueRect();
+    initRect();
 
 }
 
@@ -74,7 +74,7 @@ document.addEventListener("mousedown", choiceElement);
 document.addEventListener("keydown", shiftRect);
 window.addEventListener("load", () => {
     initPosition();
-    initBlueRect();
+    initRect();
 });
 
 function oneClick(e, color){

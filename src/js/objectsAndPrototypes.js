@@ -43,6 +43,7 @@ function Employee(name, age, company){
     this.getCompany = function(){
         return _company;
     }
+
 }
 
 Employee.prototype = Object.create(Person.prototype);
@@ -50,4 +51,3 @@ Employee.prototype.constructor = Employee;
 
 let tomEmployee = new Employee("Tom", 25, "Microsoft");
 tomEmployee.print();
-

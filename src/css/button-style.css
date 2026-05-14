@@ -1,0 +1,11 @@
+.my-btn {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff; /* Синий цвет */
+    color: white;              /* Белый текст */
+    text-decoration: none;     /* Убрать подчеркивание, если это ссылка */
+    border-radius: 5px;        /* Скругление углов */
+    border: none;
+    cursor: pointer;
+    font-family: sans-serif;
+}
