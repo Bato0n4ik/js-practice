@@ -1,0 +1,8 @@
+#text-block {
+    display: block;
+    width: 200px;
+    min-height: 40px;
+    padding: 10px;
+    border: 1px solid #ddd;
+    word-break: break-word;
+}

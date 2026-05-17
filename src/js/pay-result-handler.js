@@ -2,10 +2,6 @@ let dummyAccount = new Account(0);
 
 const paymentData = sessionStorage.getItem("payment-data");
 
-dummyAccount.addEventListener("payment-event", (e)=>{
-    documentPrintObject("Payment is " + e.detail.status + ", transfer amount: " + e.detail.payment  + ", account balance: " + e.detail.balance);
-})
-
 
 if(paymentData){
     const data = JSON.parse(paymentData);
@@ -13,3 +9,7 @@ if(paymentData){
     dummyAccount.dispatchEvent(restoreEVent);
     sessionStorage.removeItem("payment-data");
 }
+
+dummyAccount.addEventListener("payment-event", (e)=>{
+    documentPrintObject("Payment is " + e.detail.status + ", transfer amount: " + e.detail.payment  + ", account balance: " + e.detail.balance);
+})

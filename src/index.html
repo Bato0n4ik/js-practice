@@ -12,12 +12,15 @@
     <link rel="stylesheet" href="css/divsStyles.css">
     <link rel="stylesheet" href="css/divs-borders.css">
     <link rel="stylesheet" href="css/button-style.css">
+    <link rel="stylesheet" href="css/text-block-class.css">
 
     <!--<script src="js/CustomElement.js" defer></script>-->
     <!--<script src="js/events-practice.js" defer></script>-->
     <!--<script src="js/events-div-handlers.js" defer></script>-->
-    <script src="js/Account.js" defer></script>
-    <script src="js/custom-event.js" defer></script>
+    <!--<script src="js/Account.js" defer></script>
+    <script src="js/custom-event.js" defer></script>-->
+
+    <script src="js/forms.js" defer></script>
 
 </head>
 <body>
@@ -43,9 +46,32 @@
 
     <div id="blueRect">
         <div id="redRect"></div>
-    </div>-->
+    </div>
 
-    <a data-id="button-id" target="_self" href="pay-result.html" class="my-btn">Pay and Play</a>
+    <a data-id="button-id" target="_self" href="pay-result.html" class="my-btn">Pay and Play</a>-->
+
+    <form name="textInput">
+        <label for="add-str">Enter string:</label>
+
+        <input id="add-str" type="text" name="add-str"/>
+
+        <input type="submit"  name="button"/>
+    </form>
+
+    <div id="text-block"></div>
+
+    <form name= "select">
+        <label for="lang-select">Choose your languages:</label>
+
+        <select id="lang-select" name="languages"  multiple>
+            <option value="JS">Java Script</option>
+            <option value="Java">Java</option>
+            <option value="C++">C++</option>
+            <option value="C">C</option>
+            <option value="C#">C#</option>
+        </select>
+    </form>
+    <div id="select-block"></div>
 
 </body>
 </html>
