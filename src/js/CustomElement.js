@@ -1,4 +1,4 @@
-class CustomElement extends HTMLElement{
+class CustomElement extends HTMLElement implements Event {
     constructor() {
         super();
         this.textContent = "Some content";

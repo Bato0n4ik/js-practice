@@ -56,3 +56,44 @@ function choseMultipleOptions(e){
 
 optionsList.addEventListener("mousedown", choseMultipleOptions);
 optionsList.addEventListener("change", writeChosenOptions);
+
+let emailElem = document.getElementById("email");
+let errorDiv = document.getElementById("emailError");
+let usernameInput = document.forms["registerForm"].elements["username"];
+
+let sendEmailButton = document.querySelector("[name='sendEmail']")
+
+function checkValidationEmail(){
+    console.log(`Email is valid: ${emailElem.validity.valid}`);
+    console.log(`Can be validated: ${emailElem.willValidate}`);
+    console.log(`Email not valid: ${emailElem.validity.typeMismatch}`);
+    console.log(`Field is empty: ${emailElem.validity.valueMissing}`);
+    console.log(`Entered incorrect value: ${emailElem.validity.badInput}`);
+    console.log(emailElem.validationMessage);
+}
+
+function emailValidation(){
+    if(!emailElem.validity.valid){
+        errorDiv.style.display = "block";
+        errorDiv.textContent = emailElem.validationMessage;
+    }
+    else{
+        errorDiv.style.display = "none";
+        errorDiv.textContent = "";
+    }
+}
+
+function usernameValidation(){
+    if(usernameInput.value === "username"){
+        usernameInput.setCustomValidity("You can't use 'username' name");
+    }
+}
+
+//sendEmailButton.addEventListener("click", (e) => {
+//    e.preventDefault();
+//    emailElem.dispatchEvent(new CustomEvent("customEmailErrorEvent"));
+//});
+sendEmailButton.addEventListener("click", usernameValidation);
+
+usernameInput.addEventListener("change", usernameValidation);
+emailElem.addEventListener("customEmailErrorEvent", emailValidation);

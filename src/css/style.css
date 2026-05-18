@@ -7,3 +7,20 @@ img {
     width: 300px;
     height: auto;
 }
+
+#email {
+    width: 150px;
+}
+#email:invalid {
+    border-color: red;
+}
+#email:valid {
+    border-color: blue;
+}
+
+#emailError, #usernameError{
+    padding: 5px;
+    background-color:  #ffcccc;
+    color: #b33939;
+    display: none;
+}
