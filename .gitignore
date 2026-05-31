@@ -22,6 +22,8 @@ bin/
 *.iws
 *.iml
 *.ipr
+*.key
+*.crt
 out/
 img/
 !**/src/main/**/out/
