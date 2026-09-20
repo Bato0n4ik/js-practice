@@ -1,0 +1,49 @@
+/* Контейнер таблицы (можно задать границы или скролл) */
+.table-container {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    overflow: hidden;
+    font-family: sans-serif;
+}
+
+/* Главный секрет: настраиваем сетку для строк */
+.table-header, .table-row {
+    display: grid;
+    /* Создаем 4 колонки:
+       id — по контенту (auto),
+       имя и возраст — делят место,
+       действие — фиксированно 100px */
+    grid-template-columns: 60px 2fr 1fr 100px;
+    align-items: center; /* Центрируем текст по вертикали */
+    padding: 10px;
+}
+
+/* Стили для шапки */
+.table-header {
+    background-color: #f0f0f0;
+    font-weight: bold;
+    border-bottom: 2px solid #ccc;
+}
+
+/* Стили для строк с данными */
+.table-row {
+    border-bottom: 1px solid #eee;
+}
+
+/* Убираем нижнюю рамку у последней строки */
+.table-row:last-child {
+    border-bottom: none;
+}
+
+/* Красивый эффект зебры для строк внутри тела */
+.table-body .table-row:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+img {
+    width: 70px;
+    height: 30px;
+
+    border: none;
+    background-color: transparent;
+}

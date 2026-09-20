@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Fetch Test</title>
+
+    <link rel="stylesheet" href="css/ajax-practice-css/form-styles.css">
+    <link rel="stylesheet" href="css/fetch-styles/fetch-style.css">
+
+    <script src="js/fetch-websocket/fetch-wrapper.js"></script>
+</head>
+<body>
+    <div class="form-wrapper">
+        <form data-id="multipart-form-data-id"  class ="form-field" enctype="multipart/form-data">
+            <label for="name" class="label-style">Name:
+                <input id="name" name="name" type="text"/>
+            </label>
+            <label for="age" class="label-style">Age:
+                <input id="age" name="age" type="text"/>
+            </label>
+            <label for="avatar" class="label-style">
+                <input id="avatar" name="avatar" type="file" accept="image/*"/>
+            </label>
+            <button type="submit" name="img-btn" class="img-btn" value="select">
+                <img src="../img/171598.jpg" alt="send">
+            </button>
+            <button type="submit" value="create">Create</button>
+            <button type="submit" value="delete">Delete</button>
+            <button type="submit" value="update">Update</button>
+            <button type="reset">Reset</button>
+        </form>
+    </div>
+
+    <div class="table-container">
+
+        <div class="table-header">
+            <div>Name</div>
+            <div>Age</div>
+            <div>Avatar</div>
+        </div>
+
+        <div id="table-body" class="table-body">
+
+        </div>
+    </div>
+</body>
+</html>
