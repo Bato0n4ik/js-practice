@@ -1,66 +1,59 @@
-
-let id = 0;
 let table = document.getElementById("table-body");
 const url = "/users";
 let formData = document.querySelector("[data-id='multipart-form-data-id']");
 
-const createBtn = document.querySelector("[value='create']");
-const deleteBtn = document.querySelector("[value='delete']");
-const updateBtn = document.querySelector("[value='update']");
-const selectBtn = document.querySelector("[value='select']");
+let userData = null;
+let avatar = null;
 
-selectBtn.addEventListener("click",async (e) => {
-    e.preventDefault();
-    const response = await  fetch(url, {
-        method: "GET",
+const createBtn = document.querySelector("[value='registration']");
+
+fetch("users-table").then(response => response.text())
+    .then(textHtml => {
+        document.body.insertAdjacentHTML('beforeend', textHtml);
     });
 
-    if(response.ok){
-        const data = await response.json();
-        id = data.id;
-    }
-})
-
-createBtn.addEventListener("click", async (e) =>{
-    const response = await fetch(`${url}/${id}`, {
+formData.addEventListener("submit", async (e) =>{
+    const response = await fetch(`${url}`, {
         method: "POST",
         body: new FormData(formData)
     });
 
     if(response.ok){
-        const data = await response.json();
-        createRow(data);
+        await getUserData();
+        await getAvatar();
+        if(userData.id){
+            updateRow(userData, avatar)
+        }
+        else{
+            createRow(userData, avatar);
+        }
     }
 });
 
-updateBtn.addEventListener("click", async (e) => {
-    const response = await fetch(`${url}/${id}`, {
-        method: "PUT",
-        body: new FormData(formData)
+async function getAvatar(){
+    const response = await fetch("/users/avatar", {
+        method: "GET"
     });
 
     if(response.ok){
-        const data = await response.json();
-        updateRow(data);
+        avatar = await response.blob();
     }
-});
+}
 
-deleteBtn.addEventListener("click", async (e) => {
-    const response = await fetch(`${url}/${id}`, {
-        method: "DELETE"
+async function getUserData(){
+    const response = await fetch("/users/data", {
+        method: "GET"
     });
 
     if(response.ok){
-        const data = await response.json();
-        deleteRow(data.id);
+        userData = await response.json();
     }
-});
+}
 
-function createRow(dataObject){
+function createRow(dataObject, avatar){
      let row = document.createElement("div");
      row.className = "table-row";
-     id = dataObject.id;
-     row.setAttribute("id", id);
+     row.setAttribute("id", dataObject.id);
 
      let ageDiv = document.createElement("div");
      let nameDiv = document.createElement("div");
@@ -73,7 +66,7 @@ function createRow(dataObject){
 
      ageDiv.textContent = dataObject.age;
      nameDiv.textContent = dataObject.name;
-     img.src = dataObject.avatar;
+     img.src = URL.createObjectURL(avatar);
 
      avatarDiv.appendChild(img);
 
@@ -91,7 +84,7 @@ function updateRow(data) {
     for(let field of row.children){
         let attr;
         if((attr = field.getAttribute("data-name")) === "img"){
-            field.children[0].src = data.avatar;
+            field.children[0].src = avatar;
             continue;
         }
         field.textContent = data[attr];
