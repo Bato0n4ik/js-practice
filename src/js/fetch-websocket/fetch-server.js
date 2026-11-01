@@ -5,7 +5,7 @@ const path = require("path");
 
 
 let sessions = {
-    "g3H801un6g854rTc": {age: 25, name: "Steve", id: 1}
+    "g3H801un6g854rTc": {age: 25, name: "Steve", id: 'div-1234'}
 }
 
 const SECRET_KEY = crypto.scryptSync('super-secret-password', 'salt', 32);
@@ -87,15 +87,13 @@ http.createServer(async (request, response) =>{
             }
             else{
                 newSessionId =  generateId(16);
-                sessions[newSessionId] = {age: null, name: ""};
+                sessions[newSessionId] = {age: null, name: "", id: "", avatarName: ""};
                 registeredUser = sessions[newSessionId];
             }
             const buffer = readBytes(request, 5*1024*1024);
 
             const exp = /Content-Disposition: form-data; name="([^"]+)"(?:; filename="([^"]+)")?\r\n(?:Content-Type: [^\r\n]+\r\n)?\r\n([\s\S]*?)(?=\r\n--)/g;
             const matches = [...buffer.matchAll(exp)];
-
-            //response.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
 
             if (matches.length > 0) {
 
@@ -105,6 +103,8 @@ http.createServer(async (request, response) =>{
                     const value = match[3];
 
                     if(fileName === undefined){
+                        //must be validation here, if validation fail, then throw error and clear user session data
+                        // on empty or  write this data in buffer first and after success validation write it in session
                         registeredUser[name] = value;
                         continue;
                     }
@@ -116,14 +116,26 @@ http.createServer(async (request, response) =>{
                         byteArr.push(parseInt(chunk, 2));
                     }
                     const fileBytes = Buffer.from(byteArr);
-                    const newFileName = `${Date.now()}_${fileName.substring(0, fileName.lastIndexOf("."))}_${generateId(5)}.jpg`;
-                    fs.writeFileSync(path.join(imageDir, newFileName) , fileBytes);
+                    const newFileName = `${Date.now()}_user_${generateId(10)}.jpg`;
+                    registeredUser.avatarName = newFileName;
+                    if(fileBytes.length >= 100){
+                        await fs.writeFile(path.join(imageDir, newFileName) , fileBytes, err => {
+                            if (err) {
+                                console.error("Error while writing file:", err);
+                                response.writeHead(500, { 'Content-Type': 'text/plain' });
+                                return response.end("Failed to save the image to the server");
+                            }
+                        });
+                    }
+                    else{
+                        response.writeHead(400, { 'Content-Type': 'text/plain' });
+                        return response.end('Invalid or corrupted image file');
+                    }
                 }
 
                 if(encryptedTokenValue === null){
                     createAndWriteCookie(response, newSessionId);
-                    //добавим сюда присваивание id блока, а сам id блока будем получать прибавлением к статической переменной
-                    // или переменной записанную в sqlLite базу данных браузера, где будем её суммировать
+                    registeredUser.id = `div-${crypto.randomBytes(4).toString('hex')}`;
                     return response.end(JSON.stringify({redirectUrl: '/create-or-update', success: true}));
                 }
 
@@ -140,13 +152,31 @@ http.createServer(async (request, response) =>{
          if(encryptedTokenValue){
              const registeredUser = sessions[`${decrypt(encryptedTokenValue)}`];
              response.statusCode = 200;
-             return response.end(JSON.stringify(registeredUser));
+             return response.end(JSON.stringify({age: registeredUser["age"], name: registeredUser["name"] , id: registeredUser["id"]}));
          }
          response.statusCode = 401;
          response.end("Error 401: Unauthorized.");
      }
     if(url === "/users/avatar" && request.method === "GET"){
+        if(encryptedTokenValue){
+            try{
+                const registeredUser = sessions[`${decrypt(encryptedTokenValue)}`];
+                response.writeHead(200, { 'Content-Type': 'image/jpeg' });
+                fs.readFile(path.join(imageDir, registeredUser.avatarName), data => response.end(data));
+            }
+            catch (fsError) {
+                if (fsError.code === 'ENOENT') {
+                    response.writeHead(404, { 'Content-Type': 'text/plain' });
+                    return response.end('Image not found');
+                }
+                throw fsError; // Other file system errors (lack of permissions, etc.)
+            }
 
+        }
+        else{
+            response.statusCode = 401;
+            response.end("Error 401: Unauthorized.");
+        }
     }
 
 
@@ -174,13 +204,6 @@ function createAndWriteCookie(response, id = generateId(16)){
         'Set-Cookie': cookieOptions
     });
     response.statusCode = 200;
-}
-
-function getNewDivId(){
-    if(Object.values(sessions).length > 0){
-        return Math.max(...Object.values(sessions).map(obj => obj.id)) + 1;
-    }
-    return 1;
 }
 
 
