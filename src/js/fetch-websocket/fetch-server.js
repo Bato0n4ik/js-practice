@@ -4,6 +4,11 @@ const crypto = require('crypto');
 const path = require("path");
 
 
+const mimeTypes = {
+    '.jpg': 'image/jpeg',
+    '.png': 'image/png',
+};
+
 let sessions = {
     "g3H801un6g854rTc": {age: 25, name: "Steve", id: 'div-1234'}
 }
@@ -116,7 +121,20 @@ http.createServer(async (request, response) =>{
                         byteArr.push(parseInt(chunk, 2));
                     }
                     const fileBytes = Buffer.from(byteArr);
-                    const newFileName = `${Date.now()}_user_${generateId(10)}.jpg`;
+
+                    const magicBites = fileBytes.toString('hex', 0, 4);
+                    let ext = '';
+                    let mimeType = '';
+                    if(magicBites.startsWith('89504e47')){
+                        ext = 'png';
+                        mimeType = 'image/png';
+                    }
+                    else if(magicBites.startsWith('ffd8ff')){
+                        ext = 'jpg';
+                        mimeType = 'image/jpeg';
+                    }
+
+                    const newFileName = `${Date.now()}_user_${generateId(10)}.${ext}`;
                     registeredUser.avatarName = newFileName;
                     if(fileBytes.length >= 100){
                         await fs.writeFile(path.join(imageDir, newFileName) , fileBytes, err => {
@@ -135,7 +153,7 @@ http.createServer(async (request, response) =>{
 
                 if(encryptedTokenValue === null){
                     createAndWriteCookie(response, newSessionId);
-                    registeredUser.id = `div-${crypto.randomBytes(4).toString('hex')}`;
+                    registeredUser.id = `div-${crypto.randomUUID()}`;
                     return response.end(JSON.stringify({redirectUrl: '/create-or-update', success: true}));
                 }
 
@@ -158,20 +176,20 @@ http.createServer(async (request, response) =>{
          response.end("Error 401: Unauthorized.");
      }
     if(url === "/users/avatar" && request.method === "GET"){
+
         if(encryptedTokenValue){
-            try{
-                const registeredUser = sessions[`${decrypt(encryptedTokenValue)}`];
-                response.writeHead(200, { 'Content-Type': 'image/jpeg' });
-                fs.readFile(path.join(imageDir, registeredUser.avatarName), data => response.end(data));
-            }
-            catch (fsError) {
-                if (fsError.code === 'ENOENT') {
+
+            const registeredUser = sessions[`${decrypt(encryptedTokenValue)}`];
+            const ext = path.extname(registeredUser.avatarName);
+
+            fs.readFile(path.join(imageDir, registeredUser.avatarName), (err, data) => {
+                if (err) {
                     response.writeHead(404, { 'Content-Type': 'text/plain' });
                     return response.end('Image not found');
                 }
-                throw fsError; // Other file system errors (lack of permissions, etc.)
-            }
-
+                response.writeHead(200, {"Content-Type" : mimeTypes[ext]});
+                response.end(data)
+            });
         }
         else{
             response.statusCode = 401;
