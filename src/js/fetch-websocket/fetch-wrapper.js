@@ -5,12 +5,12 @@ let formData = document.querySelector("[data-id='multipart-form-data-id']");
 let userData = null;
 let avatar = null;
 
-const createBtn = document.querySelector("[value='registration']");
-
-fetch("users-table").then(response => response.text())
-    .then(textHtml => {
-        document.body.insertAdjacentHTML('beforeend', textHtml);
-    });
+document.addEventListener("DOMContentLoaded", e =>{
+    fetch("users-table").then(response => response.text())
+        .then(textHtml => {
+            document.body.insertAdjacentHTML('beforeend', textHtml);
+        });
+});
 
 formData.addEventListener("submit", async (e) =>{
     const response = await fetch(`${url}`, {
@@ -22,7 +22,7 @@ formData.addEventListener("submit", async (e) =>{
         await getUserData();
         await getAvatar();
         if(userData.id){
-            updateRow(userData, avatar)
+            updateRow(userData)
         }
         else{
             createRow(userData, avatar);
