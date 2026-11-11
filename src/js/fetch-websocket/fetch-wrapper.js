@@ -1,33 +1,39 @@
-let table = document.getElementById("table-body");
+let table = null;
 const url = "/users";
-let formData = document.querySelector("[data-id='multipart-form-data-id']");
+let formData = null;
 
 let userData = null;
 let avatar = null;
 
 document.addEventListener("DOMContentLoaded", e =>{
-    fetch("users-table").then(response => response.text())
+
+    formData = document.querySelector("[data-id='multipart-form-data-id']");
+
+    if(formData){
+        formData.addEventListener("submit", async (e) =>{
+            const response = await fetch(`${url}`, {
+                method: "POST",
+                body: new FormData(formData)
+            });
+
+            if(response.ok){
+                await getUserData();
+                await getAvatar();
+                if(userData.id){
+                    updateRow(userData)
+                }
+                else{
+                    createRow(userData, avatar);
+                }
+            }
+        });
+    }
+
+    fetch("users-table.html", {headers: {"Accept": "text/html"}}).then(response => response.text())
         .then(textHtml => {
             document.body.insertAdjacentHTML('beforeend', textHtml);
+            table = document.getElementById("table-body");
         });
-});
-
-formData.addEventListener("submit", async (e) =>{
-    const response = await fetch(`${url}`, {
-        method: "POST",
-        body: new FormData(formData)
-    });
-
-    if(response.ok){
-        await getUserData();
-        await getAvatar();
-        if(userData.id){
-            updateRow(userData)
-        }
-        else{
-            createRow(userData, avatar);
-        }
-    }
 });
 
 async function getAvatar(){

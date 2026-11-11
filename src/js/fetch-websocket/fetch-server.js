@@ -1,13 +1,24 @@
-const http = require("http");
-const fs = require("fs");
-const crypto = require('crypto');
-const path = require("path");
+import {findFile} from "../UtilityClass.js";
+import http from "node:http";
+import path from "node:path";
+import crypto from "node:crypto";
+import fs from "node:fs/promises";
 
+
+const httpStatusMap = {
+    ENOENT: 404, // File not found
+    EACCES: 403, // access denied
+    EISDIR: 400, // This is a folder, not a file
+};
 
 const mimeTypes = {
     '.jpg': 'image/jpeg',
     '.png': 'image/png',
+    '.html': 'text/html; charset=utf-8',
+    '.css': 'text/css',
+    '.js': 'text/javascript',
 };
+
 
 let sessions = {
     "g3H801un6g854rTc": {age: 25, name: "Steve", id: 'div-1234'}
@@ -49,19 +60,46 @@ async function readBytes(request, maxChunksSize = 1024 * 1024){
         }
         chunks.push(chunk);
     }
-    return Buffer.concat(chunks).toString('utf-8');
+    return Buffer.concat(chunks);
 }
 
 http.createServer(async (request, response) =>{
     const url = request.url;
-    const imageDir= path.join(__dirname, '..', '..', '..', 'img');
+    const imageDir= path.join(import.meta.dirname, '..', '..', '..', 'img');
 
     const match = request.headers.cookie?.match(/session_token=([^;]+)/);
-    const encryptedTokenValue = match? match[1]: null;
+    let encryptedTokenValue = match? match[1]: null;
 
-    if(url === "/users/login" && request.method === "POST"){
-        const stringLoginData = await  readBytes(request);
-        const loginDataObject = JSON.parse(stringLoginData);
+    const projectDir= path.join(import.meta.dirname, '..', '..', '..');
+
+    if(!url.startsWith("/api/")){
+        let ext = path.extname(url);
+        let acceptType = "";
+
+        if(!ext){
+            acceptType = request.headers['accept'].split(",")[0];
+            ext = Object.entries(mimeTypes).filter(([k, v]) => v === acceptType).map(([k,v]) => k)[0];
+        }
+        else{
+            acceptType = mimeTypes[ext];
+        }
+
+        try{
+            let fullPath = await findFile(projectDir, url);
+            let data = await fs.readFile(fullPath);
+            response.writeHead(200, {"Content-type": acceptType});
+            return response.end(data);
+
+        }catch(err){
+            let code = httpStatusMap[err.code] || 500;
+            response.writeHead(code, {"Content-type": "text/plain"});
+            return response.end(`Error: ${err.message}`);
+        }
+    }
+
+    if(url === "/api/users/login" && request.method === "POST"){
+        const bufferBody = await  readBytes(request);
+        const loginDataObject = JSON.parse(bufferBody.toString("utf-8"));
         let isAuthenticated = false;
 
         for(let key of Object.keys(sessions)){
@@ -77,28 +115,31 @@ http.createServer(async (request, response) =>{
         }
 
         response.statusCode = 401;
-        response.end("Error 401: Unauthorized.");
+        return response.end("Error 401: Unauthorized.");
     }
 
 
 
-     if (url === `/users` && request.method === "POST") {
+     if (url === `/api/users` && request.method === "POST") {
         try {
             let registeredUser = null;
             let newSessionId = '';
+            const decryptedToken = encryptedTokenValue ? decrypt(encryptedTokenValue) : null;
 
-            if(encryptedTokenValue){
+            if(encryptedTokenValue && sessions[decryptedToken]){
                 registeredUser = sessions[`${decrypt(encryptedTokenValue)}`];
             }
             else{
                 newSessionId =  generateId(16);
                 sessions[newSessionId] = {age: null, name: "", id: "", avatarName: ""};
                 registeredUser = sessions[newSessionId];
+                encryptedTokenValue = null;
             }
-            const buffer = readBytes(request, 5*1024*1024);
+            const buffer = await readBytes(request, 5*1024*1024);
+            const bufferString = buffer.toString("binary");
 
             const exp = /Content-Disposition: form-data; name="([^"]+)"(?:; filename="([^"]+)")?\r\n(?:Content-Type: [^\r\n]+\r\n)?\r\n([\s\S]*?)(?=\r\n--)/g;
-            const matches = [...buffer.matchAll(exp)];
+            const matches = [...bufferString.matchAll(exp)];
 
             if (matches.length > 0) {
 
@@ -110,40 +151,28 @@ http.createServer(async (request, response) =>{
                     if(fileName === undefined){
                         //must be validation here, if validation fail, then throw error and clear user session data
                         // on empty or  write this data in buffer first and after success validation write it in session
-                        registeredUser[name] = value;
+                        registeredUser[name] = Buffer.from(value, 'binary').toString('utf-8');
                         continue;
                     }
 
-                    const fileBitsString = value.replace(/\s+/g, '');
-                    const byteArr = [];
-                    for(let i =0; i < fileBitsString.length; i += 8){
-                        const chunk = fileBitsString.substring(i, i + 8);
-                        byteArr.push(parseInt(chunk, 2));
-                    }
-                    const fileBytes = Buffer.from(byteArr);
+                    const fileBytes = Buffer.from(value, "binary");
 
-                    const magicBites = fileBytes.toString('hex', 0, 4);
+                    const magicBites = fileBytes.subarray(0, 4).toString('hex');
                     let ext = '';
-                    let mimeType = '';
                     if(magicBites.startsWith('89504e47')){
                         ext = 'png';
-                        mimeType = 'image/png';
                     }
                     else if(magicBites.startsWith('ffd8ff')){
                         ext = 'jpg';
-                        mimeType = 'image/jpeg';
                     }
 
                     const newFileName = `${Date.now()}_user_${generateId(10)}.${ext}`;
-                    registeredUser.avatarName = newFileName;
+
                     if(fileBytes.length >= 100){
-                        await fs.writeFile(path.join(imageDir, newFileName) , fileBytes, err => {
-                            if (err) {
-                                console.error("Error while writing file:", err);
-                                response.writeHead(500, { 'Content-Type': 'text/plain' });
-                                return response.end("Failed to save the image to the server");
-                            }
-                        });
+
+                        await fs.mkdir(imageDir, { recursive: true });
+                        await fs.writeFile(path.join(imageDir, newFileName) , fileBytes);
+                        registeredUser.avatarName = newFileName;
                     }
                     else{
                         response.writeHead(400, { 'Content-Type': 'text/plain' });
@@ -154,46 +183,47 @@ http.createServer(async (request, response) =>{
                 if(encryptedTokenValue === null){
                     createAndWriteCookie(response, newSessionId);
                     registeredUser.id = `div-${crypto.randomUUID()}`;
-                    return response.end(JSON.stringify({redirectUrl: '/create-or-update', success: true}));
                 }
+                response.writeHead(200, { 'Content-Type': 'application/json' });
+                return response.end(JSON.stringify({redirectUrl: '/create-or-update', success: true}));
 
             } else {
-                response.statusCode = 400;
+                response.writeHead(400, { 'Content-Type': 'text/plain; charset=utf-8' });
                 response.end("Error 400: form data not found or wrong format.");
             }
         } catch (err) {
             response.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
-            response.end(`Error 500: ${err.message}`);
+            return response.end(`Error 500: ${err.message}`);
         }
     }
-     if(url === "/users/data" && request.method === "GET"){
+     if(url === "/api/users/data" && request.method === "GET"){
          if(encryptedTokenValue){
              const registeredUser = sessions[`${decrypt(encryptedTokenValue)}`];
              response.statusCode = 200;
              return response.end(JSON.stringify({age: registeredUser["age"], name: registeredUser["name"] , id: registeredUser["id"]}));
          }
-         response.statusCode = 401;
-         response.end("Error 401: Unauthorized.");
+         response.writeHead(401, { 'Content-Type': 'text/plain; charset=utf-8' });
+         return response.end("Error 401: Unauthorized.");
      }
-    if(url === "/users/avatar" && request.method === "GET"){
+    if(url === "/api/users/avatar" && request.method === "GET"){
 
         if(encryptedTokenValue){
 
             const registeredUser = sessions[`${decrypt(encryptedTokenValue)}`];
             const ext = path.extname(registeredUser.avatarName);
 
-            fs.readFile(path.join(imageDir, registeredUser.avatarName), (err, data) => {
-                if (err) {
-                    response.writeHead(404, { 'Content-Type': 'text/plain' });
-                    return response.end('Image not found');
-                }
+            try{
+                const data = await fs.readFile(path.join(imageDir, registeredUser.avatarName));
                 response.writeHead(200, {"Content-Type" : mimeTypes[ext]});
                 response.end(data)
-            });
+            }catch(err){
+                response.writeHead(404, { 'Content-Type': 'text/plain' });
+                return response.end('Image not found');
+            }
         }
         else{
-            response.statusCode = 401;
-            response.end("Error 401: Unauthorized.");
+            response.writeHead(401, { 'Content-Type': 'text/plain; charset=utf-8' });
+            return response.end("Error 401: Unauthorized.");
         }
     }
 
@@ -221,7 +251,4 @@ function createAndWriteCookie(response, id = generateId(16)){
         'Content-Type': 'application/json',
         'Set-Cookie': cookieOptions
     });
-    response.statusCode = 200;
 }
-
-

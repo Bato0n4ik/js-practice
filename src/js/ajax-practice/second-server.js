@@ -1,6 +1,7 @@
 const fs = require("fs/promises");
 const http = require("http");
 const path = require("path");
+const {findFile} = require("../UtilityClass");
 
 const PORT = 3001;
 
@@ -52,28 +53,7 @@ const requestListener = async ( request,  response) => {
 
 http.createServer(requestListener).listen(PORT, () => console.log(`Server is started on port:${PORT}`));
 
-async function findFile(currentDir, fileName){
-    try{
-        const entries = await fs.readdir(currentDir, {withFileTypes: true});
 
-        for(const elem of entries){
-            const fullPath = path.join(currentDir, elem.name);
-
-            if(elem.isFile() && elem.name ===  fileName){
-                return path.join(elem.parentPath, elem.name);
-            }
-            else if(elem.isDirectory()){
-                const foundPath = await findFile(fullPath, fileName);
-                if(foundPath){
-                    return foundPath;
-                }
-            }
-        }
-    }
-    catch(e){
-        console.error(`Error:${e.message}`);
-    }
-}
 
 /*
 const fs = require("fs/promises");
